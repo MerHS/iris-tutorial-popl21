@@ -69,11 +69,11 @@ Section proof.
   Lemma newlock_spec (R : iProp Σ):
     {{{ R }}} newlock #() {{{ lk, RET lk; is_lock lk R }}}.
   Proof.
-    iIntros (Φ) "HR HΦ". iApply wp_fupd.
+    iIntros (Φ) "HR HΦ". iApply wp_fupd. (* why? *)
     wp_lam. wp_alloc l as "Hl".
     (** Use the Iris rule [inv_alloc] for allocating a lock. We put both the
     resources [HR : R] and the points-to [l ↦ #false] into the lock. *)
-    iMod (inv_alloc lockN _ (lock_inv l R) with "[HR Hl]") as "#Hinv".
+    iMod (inv_alloc lockN _ (lock_inv l R) with "[Hl HR]") as "#Hinv".
     { iNext. iExists false. iFrame. }
     iModIntro. iApply "HΦ". iExists l. eauto.
   Qed.
@@ -102,18 +102,32 @@ Section proof.
     - wp_cmpxchg_fail. iMod ("Hclose" with "[Hl]") as "_".
       { iNext. iExists true. iFrame. }
       iModIntro. wp_proj.
-      (* exercise *) admit.
-    - (* exercise *) admit.
-  Admitted.
+      iApply "HΦ".
+      eauto.
+    - wp_cmpxchg_suc. iMod ("Hclose" with "[Hl]") as "_".
+      { iNext. iExists true. iFrame. }
+      iModIntro. wp_proj.
+      iApply "HΦ".
+      eauto.
+  Qed.
 
-  (** *Exercise*: prove the spec of [acquire]. Since [acquire] is a recursive
-  function, you should use the tactic [iLöb] for Löb induction. Use the tactic
-  [wp_apply] to use [try_acquire_spec] when appropriate. *)
+  (** *Exercise*: prove the spec of [acquire].
+  Since [acquire] is a recursive function, you should use the tactic [iLöb] for
+  Löb induction. Use the tactic [wp_apply] to use [try_acquire_spec] when appropriate.
+   *)
   Lemma acquire_spec lk R :
     {{{ is_lock lk R }}} acquire lk {{{ RET #(); R }}}.
   Proof.
-    (* exercise *)
-  Admitted.
+    iIntros (Φ) "#Hl HΦ".
+    iLöb as "IH".
+    wp_rec.
+    wp_bind (try_acquire lk).
+    wp_apply (try_acquire_spec with "Hl"); iIntros (b) "Hb".
+    destruct b; wp_if.
+    - iModIntro. by iApply "HΦ".
+    - iApply "IH".
+      iFrame.
+  Qed.
 
   (** *Exercise*: prove the spec of [release]. At a certain point in this proof,
   you need to open the invariant. For this you can use:
@@ -125,6 +139,15 @@ Section proof.
   Lemma release_spec lk R :
     {{{ is_lock lk R ∗ R }}} release lk {{{ RET #(); True }}}.
   Proof.
-    (* exercise *)
-  Admitted.
+    iIntros (Φ) "[#Hl HR] HΦ".
+    iDestruct "Hl" as (l ->) "#Hinv".
+    wp_lam.
+    iInv lockN as (b) "[Hl Hb]" "Hclose".
+    wp_store.
+    iMod ("Hclose" with "[Hl HR]") as "_".
+    { iNext. iExists false. iFrame. }
+    iModIntro.
+    by iApply "HΦ".
+  Qed.
+
 End proof.

@@ -81,7 +81,8 @@ Proof.
   Note that the option type is in fact encoded using sum types.
   Hence, [NONE] is syntactic sugar for [InjL #()] (or [InjLV #()]
   for values), and [SOME x] is syntactic sugar for [InjR x].
-  *)
+   *)
+
   - iDestruct "Hl" as %->.
     wp_rec.
     wp_match.
@@ -111,14 +112,24 @@ Proof.
     iApply "Post". eauto with iFrame.
 Qed.
 
+Ltac wp_exec := repeat (wp_lam || wp_pure _ || wp_load || wp_store).
 (** *Exercise*: Do the proof of [inc_list] yourself. Use ordinary induction. *)
 Lemma inc_list_spec_induction n l v :
   {{{ is_list l v }}}
     inc_list #n v
   {{{ RET #(); is_list (map (Z.add n) l) v }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "Hl Post".
+  iInduction l as [| x l] "IH" forall (v Φ); simpl.
+  - iDestruct "Hl" as %->.
+    wp_exec.
+    iApply "Post". by iPureIntro.
+  - iDestruct "Hl" as (p -> v) "[Hp Hl]".
+    wp_rec; wp_let; wp_match.
+    wp_load. wp_load. wp_proj. wp_let. wp_store.
+    wp_apply ("IH" with "Hl"). iIntros "Hl"; iApply "Post".
+    eauto with iFrame.
+Qed.
 
 (** *Exercise*: Now do the proof again using Löb induction. *)
 Lemma inc_list_spec_löb n l v :
@@ -126,8 +137,17 @@ Lemma inc_list_spec_löb n l v :
     inc_list #n v
   {{{ RET #(); is_list (map (Z.add n) l) v }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "Hl Post".
+  iLöb as "IH" forall (l v Φ).
+  destruct l as [| x l]; simpl; wp_rec; wp_let.
+  - iDestruct "Hl" as %->.
+    wp_exec. iApply "Post". eauto with iFrame.
+  - iDestruct "Hl" as (p -> v) "[Hp Hl]".
+    wp_match. wp_load. wp_load. wp_proj. wp_let. wp_store.
+    wp_apply ("IH" with "Hl").
+    iIntros "Hl". iApply "Post".
+    eauto with iFrame.
+Qed.
 
 (** *Exercise*: Do the proof of [sum_inc_list] by making use of the lemmas of
 [sum_list] and [inc_list] we just proved. Make use of [wp_apply]. *)
@@ -136,8 +156,23 @@ Lemma sum_inc_list_spec n l v :
     sum_inc_list #n v
   {{{ RET #(sum_list_coq (map (Z.add n) l)); is_list (map (Z.add n) l) v }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "Hl Post".
+  iInduction l as [| x l] "IH" forall (v Φ); simpl.
+  - iDestruct "Hl" as %->.
+    wp_exec. iApply "Post". eauto with iFrame.
+  - iDestruct "Hl" as (p -> v) "[Hp Hl]".
+    wp_rec. wp_let.
+    wp_lam. wp_let. wp_match. wp_load. wp_load. wp_proj. wp_let. wp_store.
+    wp_apply (inc_list_spec_induction with "Hl").
+    iIntros "Hl".
+    wp_pures.
+    wp_rec. wp_match. wp_load; wp_load. wp_proj. wp_let.
+    wp_apply (sum_list_spec_induction with "Hl").
+    iIntros "Hl". wp_op.
+    iApply "Post".
+    eauto with iFrame.
+Qed.
+
 
 (** *Optional exercise*: Prove the following spec of [map_list] which makes use
 of a nested Texan triple, This spec is rather weak, as it requires [f] to be
@@ -146,6 +181,21 @@ Lemma map_list_spec_induction (f : val) (f_coq : Z → Z) l v :
   (∀ n, {{{ True }}} f #n {{{ RET #(f_coq n); True }}}) -∗
   {{{ is_list l v }}} map_list f v {{{ RET #(); is_list (map f_coq l) v }}}.
 Proof.
+  iIntros "# Hf".
+  iIntros (Φ) "!> Hl Post".
+  iInduction l as [|x l] "IH" forall (v); simpl.
+  - iDestruct "Hl" as %->.
+    wp_rec. wp_let; wp_match. iApply "Post". eauto with iFrame.
+  - iDestruct "Hl" as (p -> v) "[Hp Hl]".
+    wp_rec. wp_let; wp_match. wp_load; wp_load; wp_proj. wp_let.
+    wp_apply ("Hf" with "[//]").
+    iIntros "_ /=".
+    wp_store.
+    wp_apply ("IH" with "Hl").
+    iIntros "Hl".
+    iApply "Post".
+    eauto with iFrame.
+Qed.
   (* exercise *)
-Admitted.
+
 End proof.

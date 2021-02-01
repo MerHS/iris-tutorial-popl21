@@ -108,7 +108,7 @@ Proof.
   [simpl]. *)
   iNext. iIntros "[Hy Hz] /=". wp_seq.
   (* We can also immediately frame hypothesis when using a lemma: *)
-  iApply (swap_spec with "[$Hx $Hy]"); iNext; iIntros "[Hx Hy]".
+  iApply (swap_spec with "[$Hx $Hy]"). iNext; iIntros "[Hx Hy]".
   iApply "Post". iFrame.
 Qed.
 
@@ -137,6 +137,9 @@ Lemma rotate_l_spec x y z v1 v2 v3 :
     rotate_l #x #y #z
   {{{ RET #(); x ↦ v2 ∗ y ↦ v3 ∗ z ↦ v1 }}}.
 Proof.
-  (* exercise *)
-Admitted.
+  iIntros (Φ) "(Hx & Hy & Hz) Post". wp_lam. do 2 wp_let.
+  wp_apply (swap_spec with "[$Hx $Hy]"). iIntros "[Hx Hy] /=". wp_seq.
+  wp_apply (swap_spec with "[$Hy $Hz]"). iIntros "[Hy Hz] /=".
+  iApply "Post". iFrame.
+Qed.
 End proof.
