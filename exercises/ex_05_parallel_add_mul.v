@@ -62,11 +62,62 @@ Section proof.
   and the rules for those as given above. You are allowed to use any number of
   Boolean ghost variables. *)
   Definition parallel_add_mul_inv (r : loc) (γ1 γ2 : gname) : iProp Σ :=
-    True%I. (* exercise: replace [True] with something meaningful. *)
+    (∃ (b1 b2 : bool) (z : Z),
+        r ↦ #z ∗
+       ⌜match b1, b2 with
+        | true,  true  => (z = 2 ∨ z = 4)%Z
+        | true,  false => z = 2%Z
+        | false, _     => z = 0%Z
+        end⌝
+       ∗ own γ1 (●E b1) ∗ own γ2 (●E b2)
+    )%I.
 
   Lemma parallel_add_mul_spec :
     {{{ True }}} parallel_add_mul {{{ z, RET #z; ⌜ z = 2%Z ∨ z = 4%Z ⌝ }}}.
   Proof.
-    (* exercise *)
-  Admitted.
+    iIntros (Φ) "_ Post".
+    unfold parallel_add_mul. wp_alloc r as "Hr". wp_let.
+    iMod (ghost_var_alloc false) as (γ1) "[Hγ1● Hγ1◯]".
+    iMod (ghost_var_alloc false) as (γ2) "[Hγ2● Hγ2◯]".
+    wp_apply (newlock_spec (parallel_add_mul_inv r γ1 γ2) with "[Hr Hγ1● Hγ2●]").
+    { iExists false, false, 0%Z. iFrame. simpl. auto. }
+    iIntros (l) "#Hl".
+    wp_let.
+    (* iMod (inv_alloc nroot _ (parallel_add_mul_inv r γ1 γ2) with "[Hγ1● Hγ2●]") as "#Hinvx". *)
+    (* { iNext. iExists false, false. iFrame. } *)
+    (* wp_bind (_ ||| _)%E. *)
+    wp_smart_apply (wp_par (λ _, own γ1 (◯E true)) (λ _, own γ2 (◯E true))
+                      with "[Hγ1◯] [Hγ2◯]").
+    - wp_bind (acquire _).
+      wp_apply (acquire_spec with "Hl"); iIntros "Hr".
+      iDestruct "Hr" as (b1 b2 n) "(Hr & Hb & H1 & H2)".
+      wp_seq. wp_load. wp_store.
+      iDestruct (ghost_var_agree with "H1 Hγ1◯") as %->.
+      iDestruct "Hb" as %->.
+      iMod (ghost_var_update γ1 true with "H1 Hγ1◯") as "[H1x H1y]".
+      wp_apply (release_spec with "[- H1y $Hl]").
+      { iExists true, b2, 2%Z. iFrame. iPureIntro. destruct b2; lia. }
+        by iIntros.
+    - wp_bind (acquire _).
+      wp_apply (acquire_spec with "Hl"); iIntros "Hr".
+      iDestruct "Hr" as (b1 b2 n) "(Hr & Hb & H1 & H2)".
+      wp_seq. wp_load. wp_store.
+      iDestruct (ghost_var_agree with "H2 Hγ2◯") as %->.
+      iMod (ghost_var_update γ2 true with "H2 Hγ2◯") as "[H1x H1y]".
+      wp_apply (release_spec with "[- H1y $Hl]").
+      { iExists b1, true, (n * 2)%Z. iFrame.
+        destruct b1; iDestruct "Hb" as %->; iPureIntro; lia.
+      }
+        by iIntros.
+    - iIntros (v1 v2) "[H1 H2]".
+      iNext.
+      wp_seq.
+      wp_apply (acquire_spec _ with "Hl"). iIntros "Hr".
+      iDestruct "Hr" as  (b1 b2 n) "(Hr & Hb & H1r & H2r)".
+      wp_seq; wp_load.
+      iApply "Post".
+      iDestruct (ghost_var_agree γ1 with "H1r H1") as %->.
+      iDestruct (ghost_var_agree γ2 with "H2r H2") as %->.
+      auto.
+  Qed.
 End proof.
