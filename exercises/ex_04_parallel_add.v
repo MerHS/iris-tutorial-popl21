@@ -167,6 +167,18 @@ Section proof3.
   Definition parallel_add_inv_3 (r : loc) (γ : gname) : iProp Σ :=
     (∃ n : nat, r ↦ #n ∗ own γ (●F n))%I.
 
+  Lemma ghost_var_frac_agree γ (n m p q: nat):
+    own γ (●F n) -∗ own γ (◯F{1 / 2} p) -∗ own γ (◯F{1 / 2} q) -∗ ⌜ #n = #(p + q) ⌝.
+  Proof.
+    iIntros "Hγ● H1 H2".
+    iDestruct (own_valid_3 with "H1 H2 Hγ●") as "H3".
+    rewrite -frac_auth_frag_op.
+    rewrite Qp_half_half.
+    iDestruct "H3" as %?%frac_auth_agree.
+    rewrite (_: n = p + q); last by [].
+    by rewrite Nat2Z.inj_add.
+  Qed.
+
   (** *Exercise*: finish the missing cases of the proof. *)
   Lemma parallel_add_spec_3 :
     {{{ True }}} parallel_add {{{ RET #4; True }}}.
@@ -196,23 +208,18 @@ Section proof3.
       iMod (own_update_2 _ _ _ (●F (n+2) ⋅ ◯F{1/2} 2) with "Hγ● Hγ2◯") as "[Hγ● Hγ2◯]"; [eapply Hhalf|].
       iMod ("Hclose" with "[Hr Hγ●]"); [|by auto].
       iExists _. iFrame. by rewrite Nat2Z.inj_add.
-    - iIntros (v1 v2) "[Hγ1◯ Hγ2◯]".
-      iNext. wp_seq.
+    - iIntros (v1 v2) "[Hγ1◯ Hγ2◯] !>".
+      wp_seq.
       iInv "Hinv" as (n) ">[Hr Hγ●]" "Hclose".
       wp_load.
-      iDestruct (own_valid_3 _ _ _ with "Hγ1◯ Hγ2◯ Hγ●") as "Hγ".
-      rewrite -(frac_auth_frag_op _ _ 2 2).
-      rewrite (_ : 1 / 2 + 1 /2 = 1)%Qp; last by apply Qp_half_half.
-      iDestruct "Hγ" as %?%frac_auth_agree.
-      rewrite (_: n = 4); [clear H0|by []].
-      iMod ("Hclose" with "[Hr]"); [|by iApply "Post"].
+      iDestruct (ghost_var_frac_agree with "Hγ● Hγ1◯ Hγ2◯") as %Hn; first by [].
+      rewrite (_: n = 4); last first.
+      { inversion Hn. lia. }
+      iMod ("Hclose" with "[Hr Hγ●]"); [|by iApply "Post"].
       iNext. iExists 4.
       iFrame.
+  Qed.
 
-
-
-
-  Admitted.
 
   Fixpoint parallel_faa_n n : expr :=
     match n with
@@ -224,11 +231,11 @@ Section proof3.
     let: "r" := ref #0 in
       (parallel_faa_n n)
       ;;
-      !"r".
+        !"r".
 
   Lemma parallel_add_spec_n (n: nat) :
     {{{ True }}} parallel_add_n n {{{ RET #(2 * n); True }}}.
-  Proof.
+  P    roof.
 
   Admitted.
   
