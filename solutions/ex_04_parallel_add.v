@@ -1,7 +1,7 @@
 (**
-In this exercise we use the spin-lock from the previous exercise to implement
-the running example during the lecture of the tutorial: proving that when two
-threads increase a reference that's initially zero by two, the result is four.
+In this exercise we implement the running example during the lecture of the
+tutorial: proving that when two threads increase a reference that's initially
+zero by two, the result is four.
 *)
 From iris.algebra Require Import excl_auth frac_auth numbers.
 From iris.base_logic.lib Require Import invariants.
@@ -38,7 +38,7 @@ Section proof1.
   (* END SOLUTION BEGIN TEMPLATE
     { (* exercise *) admit. }
   END TEMPLATE *)
-    wp_apply (wp_par (λ _, True%I) (λ _, True%I)).
+    wp_smart_apply (wp_par (λ _, True%I) (λ _, True%I)).
     - iInv "Hinv" as (n) ">[Hr %]" "Hclose".
       wp_faa.
       iMod ("Hclose" with "[Hr]") as "_".
@@ -127,7 +127,7 @@ Section proof2.
   (* END SOLUTION BEGIN TEMPLATE
     { (* exercise *) admit. }
   END TEMPLATE *)
-    wp_apply (wp_par (λ _, own γ1 (◯E 2%Z)) (λ _, own γ2 (◯E 2%Z))
+    wp_smart_apply (wp_par (λ _, own γ1 (◯E 2%Z)) (λ _, own γ2 (◯E 2%Z))
                 with "[Hγ1◯] [Hγ2◯]").
     - iInv "Hinv" as (n1 n2) ">(Hr & Hγ1● & Hγ2●)" "Hclose".
       wp_faa.
@@ -184,7 +184,7 @@ Section proof3.
   (* END SOLUTION BEGIN TEMPLATE
     { (* exercise *) admit. }
   END TEMPLATE *)
-    wp_apply (wp_par (λ _, own γ (◯F{1/2} 2)) (λ _, own γ (◯F{1/2} 2))
+    wp_smart_apply (wp_par (λ _, own γ (◯F{1/2} 2)) (λ _, own γ (◯F{1/2} 2))
                 with "[Hγ1◯] [Hγ2◯]").
     - iInv "Hinv" as (n) ">[Hr Hγ●]" "Hclose".
       wp_faa.

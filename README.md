@@ -5,6 +5,13 @@ This tutorial comes in two versions:
 - The folder `exercises`: skeletons of the exercises with parts left `admit`ted.
 - The folder `solutions`: the exercises together with their solutions.
 
+The slides for the tutorial's lecture component are at [talks/iris-popl21-tutorial.pdf](talks/iris-popl21-tutorial.pdf).
+You can also watch the [recording of this talk from POPL'21](https://www.youtube.com/watch?v=LjXaffBpMag).
+
+The Coq demo source is in [demo.v](talks/demo/demo.v).
+
+The tutorial material is based on the earlier [POPL 2018 tutorial](https://gitlab.mpi-sws.org/iris/tutorial-popl18/) by Robbert Krebbers and Jacques-Henri Jourdan.
+
 ## Chat
 
 For help with this tutorial, you can join the [POPL2021 Tutorial channel](https://mattermost.mpi-sws.org/iris/channels/popl2021-tutorial) on the MPI-SWS Mattermost.
@@ -14,7 +21,7 @@ To log in, you need to [create an MPI-SWS GitLab account](https://gitlab.mpi-sws
 
 For the tutorial material you need to have the following dependencies installed:
 
-- Coq 8.12.2 / 8.13.0
+- Coq 8.12.2 or 8.13.0
 - A development version of [Iris](https://gitlab.mpi-sws.org/iris/iris)
 
 *Note:* the tutorial material will not work with earlier or later versions of
@@ -31,7 +38,7 @@ already done so earlier):
     opam repo add coq-released https://coq.inria.fr/opam/released
     opam repo add iris-dev https://gitlab.mpi-sws.org/iris/opam.git
 
-Once you got opam set up, run `make build-dep` to install the right versions
+Once you have opam set up, run `make build-dep` to install the right versions
 of the dependencies.
 
 To update, do `git pull`.  After an update, the development may fail to compile
@@ -50,7 +57,7 @@ version of Coq installed, you need to install both std++ and Iris:
 
 We usually make sure that the latest commits of std++, Iris, and the tutorial
 work together, but sometimes they can be temporarily broken.  The versions
-installed via opam is always guaranteed to work.
+installed via opam are always guaranteed to work.
 
 ## Working on the exercises
 
@@ -59,7 +66,7 @@ proofs in these files are admitted and marked as `(* exercise *)`; your task is
 to complete those proofs all the way to a `Qed`.
 
 After you are done with a file, run `make` to compile and check the
-exercises. You need to have exercise 3 compiled to work on exercise 4 and 5.
+exercises. You need to have exercise 3 compiled to work on exercise 5.
 
 If you are stuck, you can find solutions in the corresponding file in the
 `solutions/` folder.

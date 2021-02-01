@@ -106,7 +106,7 @@ Section proof.
     iMod (inv_alloc N _ (parallel_add_inv r) with "[Hr]") as "#Hinv".
     { iNext. unfold parallel_add_inv.
       iExists 0. iFrame. }
-    wp_apply (wp_par (λ _, True%I) (λ _, True%I)).
+    wp_smart_apply (wp_par (λ _, True%I) (λ _, True%I)).
     { (* first thread *)
       wp_apply (faa_preserves_even with "[$Hinv]").
       done. }
@@ -192,7 +192,7 @@ Section proof.
     { iNext. iExists _, _; iFrame. }
     (* note that we have pre- and postconditions for each thread here,
     reporting what each thread contributed *)
-    wp_apply (wp_par (λ _, own γ1 (◯E 2))%I (λ _, own γ2 (◯E 2))%I with
+    wp_smart_apply (wp_par (λ _, own γ1 (◯E 2))%I (λ _, own γ2 (◯E 2))%I with
                   "[Hγ1◯] [Hγ2◯]").
 
     { iInv "Hinv" as (n1 n2) ">(Hr & Hγ1 & Hγ2)".

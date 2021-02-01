@@ -6,8 +6,8 @@ value of the reference by two. An interesting aspect of this exercise is that
 the outcome of this program is non-deterministic. Depending on which thread runs
 first, the outcome is either 2 or 4.
 
-There is no "fetch-and-multiply" operation in heap_lang, so we use a lock
-instead to make both the addition and the multiplication atomic.
+There is no "fetch-and-multiply" operation in heap_lang, so we use the spin lock
+from exercise 3 instead to make both the addition and the multiplication atomic.
 
 Contrary to the earlier exercises, this exercise is nearly entirely open.
 *)
@@ -84,7 +84,7 @@ Section proof.
     wp_apply (newlock_spec (parallel_add_mul_inv r γ1 γ2) with "[Hr Hγ1● Hγ2●]").
     { iExists false, false, 0. iFrame. done. }
     iIntros (l) "#Hl". wp_let.
-    wp_apply (wp_par (λ _, own γ1 (◯E true)) (λ _, own γ2 (◯E true))
+    wp_smart_apply (wp_par (λ _, own γ1 (◯E true)) (λ _, own γ2 (◯E true))
                 with "[Hγ1◯] [Hγ2◯]").
     - wp_apply (acquire_spec with "Hl").
       iDestruct 1 as (b1 b2 z) "(Hγ1● & Hγ2● & Hr & %)".

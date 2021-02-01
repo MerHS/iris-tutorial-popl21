@@ -6,8 +6,8 @@ value of the reference by two. An interesting aspect of this exercise is that
 the outcome of this program is non-deterministic. Depending on which thread runs
 first, the outcome is either 2 or 4.
 
-There is no "fetch-and-multiply" operation in heap_lang, so we use a lock
-instead to make both the addition and the multiplication atomic.
+There is no "fetch-and-multiply" operation in heap_lang, so we use the spin lock
+from exercise 3 instead to make both the addition and the multiplication atomic.
 
 Contrary to the earlier exercises, this exercise is nearly entirely open.
 *)
