@@ -26,6 +26,8 @@ Section proof1.
   Definition parallel_add_inv_1 (r : loc) : iProp Σ :=
     (∃ n : Z, r ↦ #n ∗ ⌜ Zeven n ⌝)%I.
 
+  Definition evenN: namespace := nroot .@ "evenN".
+
   (** *Exercise*: finish the missing cases of this proof. *)
   Lemma parallel_add_spec_1 :
     {{{ True }}} parallel_add {{{ n, RET #n; ⌜Zeven n⌝ }}}.
@@ -33,20 +35,37 @@ Section proof1.
     iIntros (Φ) "_ Post".
     unfold parallel_add. wp_alloc r as "Hr". wp_let.
     iMod (inv_alloc nroot _ (parallel_add_inv_1 r) with "[Hr]") as "#Hinv".
-    { (* exercise *) admit. }
-    wp_apply (wp_par (λ _, True%I) (λ _, True%I)).
+    { iExists 0%Z. iNext. iFrame. }
+    wp_smart_apply (wp_par (λ _, True%I) (λ _, True%I)).
+    - iInv "Hinv" as (n) ">[Hr %]" "Hclose".
+      wp_faa.
+      iApply "Hclose".
+      iExists (n + 2%Z)%Z.
+      iNext; iFrame.
+      iPureIntro.
+      by apply Zeven_plus_Zeven.
     - iInv "Hinv" as (n) ">[Hr %]" "Hclose".
       wp_faa.
       iMod ("Hclose" with "[Hr]") as "_".
-      { (* Re-establish invariant. *)
-        iExists _. iFrame "Hr". iPureIntro. by apply Zeven_plus_Zeven. }
-      (* Post-condition of this thread. *)
+      {
+        (* Re-establish invariant. *)
+        iExists _.
+        iFrame.
+        iPureIntro.
+        by apply Zeven_plus_Zeven.
+      }
       done.
-    - (* exercise *)
-      admit.
-    - (* exercise *)
-      admit.
-  Admitted.
+    - iIntros (v1 v2) "_".
+      iNext.
+      wp_seq.
+      iInv "Hinv" as (rv) ">[Hr %]" "Hclose".
+      wp_load.
+      iMod ("Hclose" with "[Hr]") as "_".
+      { iNext. iExists rv. eauto with iFrame. }
+      iModIntro.
+      iApply "Post".
+      auto.
+  Qed.
 End proof1.
 
 (** 2nd proof : we prove that the program returns 4 exactly.
@@ -82,6 +101,10 @@ Section proof2.
     own γ (●E n) -∗ own γ (◯E m) -∗ ⌜ n = m ⌝.
   Proof.
     iIntros "Hγ● Hγ◯".
+    (* iDestruct (own_valid_2 with "Hγ● Hγ◯") as %?. *)
+    (* iPureIntro. *)
+    (* by apply excl_auth_agree_L. *)
+    (* iApply (excl_auth_agree_L with "Hx"). *)
     by iDestruct (own_valid_2 with "Hγ● Hγ◯") as %?%excl_auth_agree_L.
   Qed.
 
@@ -103,8 +126,12 @@ Section proof2.
     iMod (ghost_var_alloc 0) as (γ1) "[Hγ1● Hγ1◯]".
     iMod (ghost_var_alloc 0) as (γ2) "[Hγ2● Hγ2◯]".
     iMod (inv_alloc nroot _ (parallel_add_inv_2 r γ1 γ2) with "[Hr Hγ1● Hγ2●]") as "#Hinv".
-    { (* exercise *) admit. }
-    wp_apply (wp_par (λ _, own γ1 (◯E 2%Z)) (λ _, own γ2 (◯E 2%Z))
+    {
+      iNext.
+      rewrite /parallel_add_inv_2.
+      iExists _, _. iFrame.
+    }
+    wp_smart_apply (wp_par (λ _, own γ1 (◯E 2%Z)) (λ _, own γ2 (◯E 2%Z))
                 with "[Hγ1◯] [Hγ2◯]").
     - iInv "Hinv" as (n1 n2) ">(Hr & Hγ1● & Hγ2●)" "Hclose".
       wp_faa.
@@ -112,11 +139,22 @@ Section proof2.
       iMod (ghost_var_update γ1 2 with "Hγ1● Hγ1◯") as "[Hγ1● Hγ1◯]".
       iMod ("Hclose" with "[- Hγ1◯]"); [|by auto].
       iExists _, _. iFrame "Hγ1● Hγ2●". rewrite (_ : 2 + n2 = 0 + n2 + 2)%Z; [done|ring].
-    - (* exercise *)
-      admit.
-    - (* exercise *)
-      admit.
-  Admitted.
+    - iInv "Hinv" as (n1 n2) ">(Hr & Hγ1● & Hγ2●)" "Hclose".
+      wp_faa.
+      iDestruct (ghost_var_agree with "Hγ2● Hγ2◯") as %->.
+      iMod (ghost_var_update γ2 2 with "Hγ2● Hγ2◯") as "[Hγ2● Hγ2◯]".
+      iMod ("Hclose" with "[- Hγ2◯]"); [|by auto].
+      iExists _, _. iFrame "Hγ1● Hγ2●". rewrite (_ : n1 + 2 = n1 + 0 + 2)%Z; [done|ring].
+    - iIntros (v1 v2) "[Hγ1◯ Hγ2◯]".
+      iNext. wp_seq.
+      iInv "Hinv" as (n1 n2) ">(Hr & Hγ1● & Hγ2●)" "Hclose".
+      iDestruct (ghost_var_agree with "Hγ1● Hγ1◯") as %->.
+      iDestruct (ghost_var_agree with "Hγ2● Hγ2◯") as %->.
+      wp_load.
+      iMod ("Hclose" with "[- Post]").
+      { iExists _, _. iFrame. }
+      by iApply "Post".
+  Qed.
 End proof2.
 
 (** 3rd proof (not shown in the talk) : we prove that the program returns 4
@@ -138,19 +176,60 @@ Section proof3.
     iMod (own_alloc (●F 0 ⋅ ◯F 0)) as (γ) "[Hγ● [Hγ1◯ Hγ2◯]]".
     { by apply auth_both_valid. }
     iMod (inv_alloc nroot _ (parallel_add_inv_3 r γ) with "[Hr Hγ●]") as "#Hinv".
-    { (* exercise *) admit. }
-    wp_apply (wp_par (λ _, own γ (◯F{1/2} 2)) (λ _, own γ (◯F{1/2} 2))
-                with "[Hγ1◯] [Hγ2◯]").
+    { iExists _. iFrame. }
+    assert (forall (n k p: nat), ●F n ⋅ ◯F{1 / 2} p ~~> ●F (n + k) ⋅ ◯F{1 / 2} (k + p)) as Hhalf.
+    {
+      intros n k p. rewrite (comm plus).
+      apply frac_auth_update.
+      apply (op_local_update_discrete n p k).
+      auto.
+    }
+    wp_smart_apply (wp_par (λ _, own γ (◯F{1/2} 2)) (λ _, own γ (◯F{1/2} 2))
+                      with "[Hγ1◯] [Hγ2◯]").
     - iInv "Hinv" as (n) ">[Hr Hγ●]" "Hclose".
       wp_faa.
-      iMod (own_update_2 _ _ _ (●F (n+2) ⋅ ◯F{1/2}2) with "Hγ● Hγ1◯") as "[Hγ● Hγ1◯]".
-      { rewrite (comm plus).
-        by apply frac_auth_update, (op_local_update_discrete n 0 2). }
+      iMod (own_update_2 _ _ _ (●F (n+2) ⋅ ◯F{1/2} 2) with "Hγ● Hγ1◯") as "[Hγ● Hγ1◯]"; [eapply Hhalf|].
       iMod ("Hclose" with "[Hr Hγ●]"); [|by auto].
       iExists _. iFrame. by rewrite Nat2Z.inj_add.
-    - (* exercise *)
-      admit.
-    - (* exercise *)
-      admit.
+    - iInv "Hinv" as (n) ">[Hr Hγ●]" "Hclose".
+      wp_faa.
+      iMod (own_update_2 _ _ _ (●F (n+2) ⋅ ◯F{1/2} 2) with "Hγ● Hγ2◯") as "[Hγ● Hγ2◯]"; [eapply Hhalf|].
+      iMod ("Hclose" with "[Hr Hγ●]"); [|by auto].
+      iExists _. iFrame. by rewrite Nat2Z.inj_add.
+    - iIntros (v1 v2) "[Hγ1◯ Hγ2◯]".
+      iNext. wp_seq.
+      iInv "Hinv" as (n) ">[Hr Hγ●]" "Hclose".
+      wp_load.
+      iDestruct (own_valid_3 _ _ _ with "Hγ1◯ Hγ2◯ Hγ●") as "Hγ".
+      rewrite -(frac_auth_frag_op _ _ 2 2).
+      rewrite (_ : 1 / 2 + 1 /2 = 1)%Qp; last by apply Qp_half_half.
+      iDestruct "Hγ" as %?%frac_auth_agree.
+      rewrite (_: n = 4); [clear H0|by []].
+      iMod ("Hclose" with "[Hr]"); [|by iApply "Post"].
+      iNext. iExists 4.
+      iFrame.
+
+
+
+
   Admitted.
+
+  Fixpoint parallel_faa_n n : expr :=
+    match n with
+    | O => ( FAA "r" #2 )
+    | S n =>  (parallel_faa_n n) ||| ( FAA "r" #2 )
+    end.
+
+  Definition parallel_add_n n : expr :=
+    let: "r" := ref #0 in
+      (parallel_faa_n n)
+      ;;
+      !"r".
+
+  Lemma parallel_add_spec_n (n: nat) :
+    {{{ True }}} parallel_add_n n {{{ RET #(2 * n); True }}}.
+  Proof.
+
+  Admitted.
+  
 End proof3.

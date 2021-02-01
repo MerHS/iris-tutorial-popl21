@@ -1,11 +1,9 @@
 -Q exercises exercises
 -Q solutions solutions
--Q talks/demo demo
 INSTALLDEFAULTROOT = tutorial-popl18
 # Iris 3.3 still uses this to be compatible with Coq 8.9.
 -arg -w -arg -convert_concl_no_check
 
-talks/demo/demo.v
 exercises/ex_01_swap.v
 exercises/ex_02_sumlist.v
 exercises/ex_03_spinlock.v
