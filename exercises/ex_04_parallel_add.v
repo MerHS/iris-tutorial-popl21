@@ -35,7 +35,6 @@ Section proof1.
     iIntros (Φ) "_ Post".
     unfold parallel_add. wp_alloc r as "Hr". wp_let.
     iMod (inv_alloc nroot _ (parallel_add_inv_1 r) with "[Hr]") as "#Hinv".
-<<<<<<< HEAD
     { iExists 0%Z. iNext. iFrame. }
     wp_smart_apply (wp_par (λ _, True%I) (λ _, True%I)).
     - iInv "Hinv" as (n) ">[Hr %]" "Hclose".
@@ -45,10 +44,6 @@ Section proof1.
       iNext; iFrame.
       iPureIntro.
       by apply Zeven_plus_Zeven.
-=======
-    { (* exercise *) admit. }
-    wp_smart_apply (wp_par (λ _, True%I) (λ _, True%I)).
->>>>>>> 2baafaf101275117e8bb744acfd27a1625584cc7
     - iInv "Hinv" as (n) ">[Hr %]" "Hclose".
       wp_faa.
       iMod ("Hclose" with "[Hr]") as "_".
